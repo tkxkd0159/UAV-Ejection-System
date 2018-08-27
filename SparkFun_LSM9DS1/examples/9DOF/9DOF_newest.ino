@@ -5,31 +5,24 @@ The LSM9DS1 has a maximum voltage of 3.6V.
 *****************************************************************/
 #include <Wire.h> 
 #include <SPI.h>
-#include <SparkFunLSM9DS1.h> /* Calculate Data*/
+#include <SparkFunLSM9DS1.h> // Calculate Data
 
 
 LSM9DS1 imu;
 
-///////////////////////
-// Example I2C Setup //
-///////////////////////
-// SDO_XM and SDO_G are both pulled high, so our addresses are:
+
 #define LSM9DS1_M  0x1E // Would be 0x1C if SDO_M is LOW
 #define LSM9DS1_AG  0x6B // Would be 0x6A if SDO_AG is LOW
 
-////////////////////////////
-// Sketch Output Settings //
-////////////////////////////
 #define PRINT_CALCULATED
-//#define PRINT_RAW
-#define PRINT_SPEED 250 // 250 ms between prints
+
+#define PRINT_SPEED 500 // ~ms 
 static unsigned long lastPrint = 0; // Keep track of print time
 
 // Earth's magnetic field varies by location. Add or subtract 
-// a declination to get a more accurate heading. Calculate 
-// your's here:
+
 // http://www.ngdc.noaa.gov/geomag-web/#declination
-#define DECLINATION -8.58 // Declination (degrees) in Boulder, CO.
+#define DECLINATION -8.45 // Declination (degrees) in seoul
 
 void setup() 
 {
@@ -85,10 +78,11 @@ void loop()
   
   if ((lastPrint + PRINT_SPEED) < millis())
   {
-    printGyro();  // Print "G: gx, gy, gz"
-    printAccel(); // Print "A: ax, ay, az"
-    printMag();   // Print "M: mx, my, mz"
-    // Print the heading and orientation for fun!
+
+    printAccel(); 
+    printGyro();  
+    printMag();   
+    
     // Call print attitude. The LSM9DS1's mag x and y
     // axes are opposite to the accelerometer, so my, mx are
     // substituted for each other.
@@ -104,7 +98,7 @@ void printGyro()
 {
   // Now we can use the gx, gy, and gz variables as we please.
   // Either print them as raw ADC values, or calculated in DPS.
-  Serial.print("G: ");
+  Serial.print("Gyro: ");
 #ifdef PRINT_CALCULATED
   // If you want to print calculated values, you can use the
   // calcGyro helper function to convert a raw ADC value to
@@ -128,16 +122,16 @@ void printAccel()
 {  
   // Now we can use the ax, ay, and az variables as we please.
   // Either print them as raw ADC values, or calculated in g's.
-  Serial.print("A: ");
+  Serial.print("Accel: ");
 #ifdef PRINT_CALCULATED
   // If you want to print calculated values, you can use the
   // calcAccel helper function to convert a raw ADC value to
   // g's. Give the function the value that you want to convert.
-  Serial.print(imu.calcAccel(imu.ax), 2);
+  Serial.print(-imu.calcAccel(imu.ax), 2);
   Serial.print(", ");
-  Serial.print(imu.calcAccel(imu.ay), 2);
+  Serial.print(-imu.calcAccel(imu.ay), 2);
   Serial.print(", ");
-  Serial.print(imu.calcAccel(imu.az), 2);
+  Serial.print(-imu.calcAccel(imu.az), 2);
   Serial.println(" g");
 #elif defined PRINT_RAW 
   Serial.print(imu.ax);
@@ -153,14 +147,16 @@ void printMag()
 {  
   // Now we can use the mx, my, and mz variables as we please.
   // Either print them as raw ADC values, or calculated in Gauss.
-  Serial.print("M: ");
+  Serial.print("Mag: ");
 #ifdef PRINT_CALCULATED
-  // If you want to print calculated values, you can use the
-  // calcMag helper function to convert a raw ADC value to
-  // Gauss. Give the function the value that you want to convert.
-  Serial.print(imu.calcMag(imu.mx), 2);
+
+  /* If you want to print calculated values, you can use the
+   calcMag helper function to convert a raw ADC value to
+   Gauss. Give the function the value that you want to convert.*/
+   
+  Serial.print(-imu.calcMag(imu.my), 2);
   Serial.print(", ");
-  Serial.print(imu.calcMag(imu.my), 2);
+  Serial.print(-imu.calcMag(imu.mx), 2);
   Serial.print(", ");
   Serial.print(imu.calcMag(imu.mz), 2);
   Serial.println(" gauss");
@@ -173,36 +169,59 @@ void printMag()
 #endif
 }
 
-// Calculate pitch, roll, and heading.
-// Pitch/roll calculations take from this app note:
-// http://cache.freescale.com/files/sensors/doc/app_note/AN3461.pdf?fpsp=1
-// Heading calculations taken from this app note:
-// http://www51.honeywell.com/aero/common/documents/myaerospacecatalog-documents/Defense_Brochures-documents/Magnetic__Literature_Application_notes-documents/AN203_Compass_Heading_Using_Magnetometers.pdf
+
 void printAttitude(float ax, float ay, float az, float mx, float my, float mz)
 {
-  float roll = atan2(ay, az);
-  float pitch = atan2(-ax, sqrt(ay * ay + az * az));
+  float real_ax= -ax;
+  float real_ay = -ay;
+  float real_az = az; 
+  float roll = atan2(real_ay, real_az);
+  float pitch;
+  if (real_az >= 0)
   
+  pitch = asin(-real_ax/sqrt(real_ax*real_ax + real_ay * real_ay + real_az * real_az));
+
+  else if(real_az < 0 && real_ax < 0)
+  
+  pitch = -asin(-real_ax/sqrt(real_ax*real_ax + real_ay * real_ay + real_az * real_az))+ PI;
+
+  else if(real_az < 0 && real_ax >= 0)
+  
+   pitch = -asin(-real_ax/sqrt(real_ax*real_ax + real_ay * real_ay + real_az * real_az)) - PI;
+   
   float heading;
-  if (my == 0)
-    heading = (mx < 0) ? PI : 0;
+
+  if (mx == 0)
+    heading = (my < 0) ? PI : 0; //if mx<0, then heading=PI else 0
+
+  
+ 
+    
   else
+  
     heading = atan2(mx, my);
     
-  heading -= DECLINATION * PI / 180;
+  heading += DECLINATION * PI / 180;
+
+
+  if (heading < 0)
+      heading += 2*PI;
+
+
+
   
-  if (heading > PI) heading -= (2 * PI);
-  else if (heading < -PI) heading += (2 * PI);
-  else if (heading < 0) heading += 2 * PI;
+
   
   // Convert everything from radians to degrees:
   heading *= 180.0 / PI;
   pitch *= 180.0 / PI;
   roll  *= 180.0 / PI;
-  
-  Serial.print("Pitch, Roll: ");
-  Serial.print(pitch, 2);
-  Serial.print(", ");
-  Serial.println(roll, 2);
-  Serial.print("Heading: "); Serial.println(heading, 2);
+
+  Serial.print("Pitch: ");
+  Serial.print(pitch, 2); Serial.println(" deg");
+  Serial.print("Roll: ");
+  Serial.print(roll, 2); Serial.println(" deg");
+  Serial.print("Heading: "); 
+  Serial.print(heading, 2);Serial.println(" deg");
+
 }
