@@ -1,5 +1,6 @@
 # UAV Ejection System
    
-+coredasdas
 
-test
+2018, the second half year
+
+GCS, Communication system, Embedded system
