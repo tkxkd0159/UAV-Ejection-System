@@ -1,0 +1,3 @@
+#exclude c# packages
+
+GCS(C#)/GCS_MH001/packages/
