@@ -61,7 +61,7 @@ TinyGPSPlus gps;
 
 void setup()
 {
-  Serial.begin(57600);
+  Serial.begin(9600);
   Serial1.begin(GPSBaud);
   Serial2.begin(IMUBaud);
 
@@ -98,7 +98,10 @@ if(Parser(euler, 3))
   
     Data_struc();
     FCCtoGCS_Data();
+    
+
     Serial.write(FC_data, sizeof(FC_data));
+   
 
  /* if (millis() > 5000 && gps.charsProcessed() < 10)
   {
@@ -111,12 +114,19 @@ if(Parser(euler, 3))
 
 void Data_struc()
 {
-  memcpy(&gps_lon, buf_lon, sizeof(float));
+/*  memcpy(&gps_lon, buf_lon, sizeof(float));
   memcpy(&gps_lat, buf_lat, sizeof(float));
   memcpy(&gps_hdop, buf_hdop, sizeof(float));
   memcpy(&roll, buf_roll, sizeof(float));
   memcpy(&pitch, buf_pitch, sizeof(float));
-  memcpy(&yaw, buf_yaw, sizeof(float));
+  memcpy(&yaw, buf_yaw, sizeof(float));*/
+   memcpy(&buf_lon, &gps_lon, sizeof(float));
+  memcpy(&buf_lat, &gps_lat, sizeof(float));
+  memcpy(&buf_hdop, &gps_hdop, sizeof(float));
+  memcpy(&buf_roll, &roll, sizeof(float));
+  memcpy(&buf_pitch, &pitch, sizeof(float));
+  memcpy(&buf_yaw, &yaw, sizeof(float));
+
   
 }
 
@@ -163,7 +173,7 @@ void FCCtoGCS_Data()
 
 void displayInfo()
 {
-  Serial.print(F("Location: ")); 
+  
   if (gps.location.isValid() || gps.hdop.isValid())
   {
    gps_lon = gps.location.lng();
