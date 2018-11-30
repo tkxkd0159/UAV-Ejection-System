@@ -1,19 +1,24 @@
 #include <TinyGPS++.h>
 #include <string.h>
+#include <Servo.h>
 
 
+//#define SBUF_SIZE 64
+Servo Biteservo;
+TinyGPSPlus gps;  
 
-#define SBUF_SIZE 64
-
-static const uint32_t IMUBaud = 115200;
-static const uint32_t GPSBaud = 9600;
-
-char sbuf[SBUF_SIZE];
-char buf_lon[4], buf_lat[4], buf_hdop[4], buf_roll[4], buf_pitch[4], buf_yaw[4];
+char sbuf[64];
 char FC_data[28];
+char ejec_data[12];
+
+char buf_lon[4], buf_lat[4],buf_roll[4], buf_pitch[4], buf_yaw[4], buf_ejeclon[4], buf_ejeclat[4];
+
+
 
 signed int sbuf_cnt=0;
-float roll, pitch, yaw, gps_hdop, gps_lon, gps_lat;
+float roll, pitch, yaw;
+float gps_lon, gps_lat,ejeclon, ejeclat;
+byte HDOP;
 float euler[3];
 
 int Parser(float *item, int number_of_item)
@@ -37,16 +42,14 @@ int Parser(float *item, int number_of_item)
            }
 
            result = 1;
-
-         // Serial.print("\n\r");
-         // for(i=0;i<number_of_item;i++)  {  Serial.print(item[i]);  Serial.print(" "); }
+           
        }
      else if(sbuf[sbuf_cnt]=='*')
        {   sbuf_cnt=-1;
        }
 
      sbuf_cnt++;
-     if(sbuf_cnt>=SBUF_SIZE) sbuf_cnt=0;
+     if(sbuf_cnt>=64) sbuf_cnt=0;
   }
   
   return result;
@@ -54,35 +57,24 @@ int Parser(float *item, int number_of_item)
 
 
 
-
-TinyGPSPlus gps;
-
-
-
 void setup()
 {
-  Serial.begin(9600);
-  Serial1.begin(GPSBaud);
-  Serial2.begin(IMUBaud);
-
-
-  //Serial.print(F("Testing System v. ")); Serial.println(TinyGPSPlus::libraryVersion());
-  //Serial.println();
+  Serial.begin(9600); //xbee
+  Serial1.begin(9600); //GPS
+  Serial2.begin(115200); //IMU
+  Biteservo.attach(2);
+  Biteservo.write(123);
 }
 
 void loop()
 {
+
+  
 if(Parser(euler, 3))
   {
     roll = euler[0];
     pitch = euler[1];
     yaw = euler[2];
-
-    
-   //  Serial.print("\n\r");
-   //  Serial.print(euler[0]);   Serial.print(" ");
-    // Serial.print(euler[1]);   Serial.print(" ");
-    // Serial.print(euler[2]);   Serial.print(" ");
   }
 
 
@@ -97,32 +89,57 @@ if(Parser(euler, 3))
 
   
     Data_struc();
-    FCCtoGCS_Data();
+//    FCCtoGCS_Data();
+
     
 
+
+
     Serial.write(FC_data, sizeof(FC_data));
+
+  
+/*
+if(roll>60){
+
+  Biteservo.write(0);
+
+  ejeclon = gps.location.lng();
+  ejeclat = gps.location.lat();
+
+  memcpy(&buf_ejeclon, &ejeclon, sizeof(float));
+  memcpy(&buf_ejeclat, &ejeclat, sizeof(float));
+
+ ejec_data[0] = 0xDD;
+ ejec_data[1] = 0xDD;
+ ejec_data[2] = buf_ejeclon[0];
+ ejec_data[3] = buf_ejeclon[1];
+ ejec_data[4] = buf_ejeclon[2];
+ ejec_data[5] = buf_ejeclon[3];
+ ejec_data[6] = buf_ejeclat[0];
+ ejec_data[7] = buf_ejeclat[1];
+ ejec_data[8] = buf_ejeclat[2];
+ ejec_data[9] = buf_ejeclat[3];
+ ejec_data[10] = 0xDF;
+ ejec_data[11] = 0xDF;
+
+ Serial.write(ejec_data, sizeof(ejec_data));
+ }
+  */
+
+
    
 
- /* if (millis() > 5000 && gps.charsProcessed() < 10)
-  {
-    Serial.println(F("No GPS detected: check wiring."));
-  
-  }
-*/
+
+
   
 }
 
 void Data_struc()
 {
-/*  memcpy(&gps_lon, buf_lon, sizeof(float));
-  memcpy(&gps_lat, buf_lat, sizeof(float));
-  memcpy(&gps_hdop, buf_hdop, sizeof(float));
-  memcpy(&roll, buf_roll, sizeof(float));
-  memcpy(&pitch, buf_pitch, sizeof(float));
-  memcpy(&yaw, buf_yaw, sizeof(float));*/
-   memcpy(&buf_lon, &gps_lon, sizeof(float));
+
+  memcpy(&buf_lon, &gps_lon, sizeof(float));
   memcpy(&buf_lat, &gps_lat, sizeof(float));
-  memcpy(&buf_hdop, &gps_hdop, sizeof(float));
+  //memcpy(&buf_hdop, &gps_hdop, sizeof(long));
   memcpy(&buf_roll, &roll, sizeof(float));
   memcpy(&buf_pitch, &pitch, sizeof(float));
   memcpy(&buf_yaw, &yaw, sizeof(float));
@@ -174,21 +191,17 @@ void FCCtoGCS_Data()
 void displayInfo()
 {
   
-  if (gps.location.isValid() || gps.hdop.isValid())
+  if (gps.location.isValid())
   {
    gps_lon = gps.location.lng();
    gps_lat = gps.location.lat();
-   gps_hdop = gps.hdop.hdop();
-    
-   // Serial.print(gps.location.lat(), 6);  // (data, significant figure)
-   // Serial.print(F(","));
-  //  Serial.println(gps.location.lng(), 6);
-   // Serial.print(gps.hdop.hdop(), 3);
-  }
-  else
-  {
-    //Serial.print(F("INVALID"));
-  }
+  
 
-  //Serial.println();
+  }
+  
+  if(gps.hdop.isValid()){
+       
+      gps_hdop = gps.hdop.hdop();
+  
+}
 }
