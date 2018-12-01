@@ -1,4 +1,5 @@
 #include <TinyGPS++.h>
+#include <string.h>
 
 TinyGPSPlus gps;
  float lon, lati;
@@ -6,8 +7,7 @@ TinyGPSPlus gps;
  byte HDOP;
  
 void setup() {
-  // put your setup code here, to run once:
-
+   
   Serial.begin(9600);
   Serial1.begin(9600);
  
@@ -15,7 +15,7 @@ void setup() {
 
 void loop()
 {
-    if (Serial1.available() > 0){
+   if(Serial1.available() > 0){
     if (gps.encode(Serial1.read()))
       displayInfo();
 
@@ -76,26 +76,8 @@ void displayInfo()
    
 
    Serial.write(packet,sizeof(packet));
-     
-   /* Serial.print(lon);
-    Serial.print(F(","));
-    Serial.print(lati);
-    Serial.print(F(","));*/
 
 
   }
 
 
-/*
-  Serial.print(F("  HDOP: ")); 
-  if(gps.hdop.isValid()){
-      Serial.print(gps.hdop.hdop(),4);
-     
-  
-}
-
-  
-}
-
-
-*/
