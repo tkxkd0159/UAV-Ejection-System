@@ -1,25 +1,26 @@
 #include <TinyGPS++.h>
 #include <string.h>
-#include <Servo.h>
+// #include <Servo.h>
 
 
 //#define SBUF_SIZE 64
-Servo Biteservo;
+//Servo Biteservo;
 TinyGPSPlus gps;  
 
-char sbuf[64];
 char FC_data[28];
-char ejec_data[12];
-
-char buf_lon[4], buf_lat[4],buf_roll[4], buf_pitch[4], buf_yaw[4], buf_ejeclon[4], buf_ejeclat[4];
 
 
+char buf_lon[4], buf_lat[4],buf_hdop[4], buf_roll[4], buf_pitch[4], buf_yaw[4];
+
+// buf_ejeclon[4], buf_ejeclat[4],ejeclon, ejeclat, char ejec_data[12];
+
+
+float roll, pitch, yaw;
+float gps_lon, gps_lat, gps_hdop;
+float euler[3];
 
 signed int sbuf_cnt=0;
-float roll, pitch, yaw;
-float gps_lon, gps_lat,ejeclon, ejeclat;
-byte HDOP;
-float euler[3];
+char sbuf[64];
 
 int Parser(float *item, int number_of_item)
 {
@@ -62,8 +63,8 @@ void setup()
   Serial.begin(9600); //xbee
   Serial1.begin(9600); //GPS
   Serial2.begin(115200); //IMU
-  Biteservo.attach(2);
-  Biteservo.write(123);
+ // Biteservo.attach(2);
+ // Biteservo.write(123);
 }
 
 void loop()
@@ -89,7 +90,7 @@ if(Parser(euler, 3))
 
   
     Data_struc();
-//    FCCtoGCS_Data();
+   FCCtoGCS_Data();
 
     
 
@@ -139,7 +140,7 @@ void Data_struc()
 
   memcpy(&buf_lon, &gps_lon, sizeof(float));
   memcpy(&buf_lat, &gps_lat, sizeof(float));
-  //memcpy(&buf_hdop, &gps_hdop, sizeof(long));
+  memcpy(&buf_hdop, &gps_hdop, sizeof(long));
   memcpy(&buf_roll, &roll, sizeof(float));
   memcpy(&buf_pitch, &pitch, sizeof(float));
   memcpy(&buf_yaw, &yaw, sizeof(float));
