@@ -18,6 +18,8 @@ char buf_lon[4], buf_lat[4],buf_hdop[4], buf_roll[4], buf_pitch[4], buf_yaw[4];
 float roll, pitch, yaw;
 float gps_lon, gps_lat, gps_hdop;
 float euler[3];
+bool test=false;
+bool test2=false; 
 
 signed int sbuf_cnt=0;
 char sbuf[64];
@@ -70,6 +72,33 @@ void setup()
 void loop()
 {
 
+
+while(Serial1.available() > 0){
+
+   int tempdata;
+
+   tempdata = Serial1.read();
+    
+    if(gps.encode(tempdata)){
+       test = true;
+       
+
+
+  if(gps.location.isValid()){
+   gps_lon = gps.location.lng();
+   gps_lat = gps.location.lat();
+   test2 = true;
+  }
+
+  if(gps.hdop.isValid()){
+    gps_hdop = gps.hdop.hdop();
+ 
+    }
+    
+  }
+}
+
+
   
 if(Parser(euler, 3))
   {
@@ -80,13 +109,8 @@ if(Parser(euler, 3))
 
 
  
-  if(Serial1.available() > 0){
-    
-    if(gps.encode(Serial1.read())){
-      displayInfo();
-    }
-    
-  }
+  
+
 
   
     Data_struc();
@@ -94,13 +118,11 @@ if(Parser(euler, 3))
 
     
 
-
-
     Serial.write(FC_data, sizeof(FC_data));
 
   
 /*
-if(roll>60){
+if(int(roll) > 60){
 
   Biteservo.write(0);
 
@@ -125,8 +147,8 @@ if(roll>60){
 
  Serial.write(ejec_data, sizeof(ejec_data));
  }
-  */
-
+  
+*/
 
    
 
@@ -185,24 +207,9 @@ void FCCtoGCS_Data()
 
   FC_data[26] = 0xFE;
   FC_data[27] = 0xFE;
+  
 
   
 }
 
-void displayInfo()
-{
-  
-  if (gps.location.isValid())
-  {
-   gps_lon = gps.location.lng();
-   gps_lat = gps.location.lat();
-  
 
-  }
-  
-  if(gps.hdop.isValid()){
-       
-      gps_hdop = gps.hdop.hdop();
-  
-}
-}

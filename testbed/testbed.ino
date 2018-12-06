@@ -15,7 +15,7 @@ void setup() {
 
 void loop()
 {
-   if(Serial1.available() > 0){
+   while(Serial1.available() > 0){
     if (gps.encode(Serial1.read()))
       displayInfo();
 
